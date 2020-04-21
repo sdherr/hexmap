@@ -28,6 +28,8 @@ layout_pointy = Orientation(math.sqrt(3.0), math.sqrt(3.0) / 2.0, 0.0, 3.0 / 2.0
 layout_flat = Orientation(3.0 / 2.0, 0.0, math.sqrt(3.0) / 2.0, math.sqrt(3.0), 2.0 / 3.0, 0.0, -1.0 / 3.0, math.sqrt(3.0) / 3.0, 0.0)
 PI_OVER_THREE = math.pi / 3.0
 
+BLACK = (0, 0, 0)
+
 
 class Position(tuple):
     # Using Cube/Axial coordinates
@@ -146,10 +148,10 @@ class HexMap:
         return Position(q, r).round()
 
     def draw(self, screen):
-        self.map_surface.fill((0, 0, 0))  # black
+        self.map_surface.fill(BLACK)
         for hex in self.hexes.values():
             hex.draw()
-        screen.blit(self.map_surface, (0,0))
+        screen.blit(self.map_surface, (0, 0))
 
 
 class Hex:
@@ -210,6 +212,43 @@ class Hex:
         pygame.draw.polygon(self.map, self.color, self.points, 1)
 
 
+class TabPane:
+    WIDTH_BUFFER = 5
+    HEIGHT_BUFFER = 10
+    def __init__(self, size):
+        self.expanded = False
+        self.active_tab = None
+        self.tabs = []
+        self.font = pygame.font.SysFont(pygame.font.get_default_font(), 30)
+        tmp_surface = self.font.render('Ig', True, (0, 0, 255), BLACK)
+        tmp_surface = pygame.transform.rotate(tmp_surface, 90)
+        map_width, map_height = size
+        self.tab_width = tmp_surface.get_size()[0] + self.WIDTH_BUFFER * 2
+        self.tab_row = pygame.Surface((self.tab_width, map_height))
+        self.position = (map_width - self.tab_width, 0)
+
+    def create_tab(self, name):
+        text_surface = self.font.render(name, True, (0, 0, 255), BLACK)
+        text_surface = pygame.transform.rotate(text_surface, 90)
+        self.tabs.append(text_surface)
+        self.active_tab = text_surface
+
+    def draw(self, screen):
+        height = 0
+        for tab in self.tabs:
+            tab_height = tab.get_size()[1]
+            top_right = (self.tab_width - 1, height)
+            top_left = (0, height + self.HEIGHT_BUFFER)
+            bottom_left = (0, height + self.HEIGHT_BUFFER + tab_height)
+            bottom_right = (self.tab_width - 1, height + 2 * self.HEIGHT_BUFFER + tab_height)
+            pygame.draw.polygon(self.tab_row, BLACK, (top_right, top_left, bottom_left, bottom_right))
+            pygame.draw.polygon(self.tab_row, (255, 255, 255), (top_right, top_left, bottom_left, bottom_right), 1)
+            self.tab_row.blit(tab, (0 + self.WIDTH_BUFFER, height + self.HEIGHT_BUFFER))
+            height += tab_height + 2 * self.HEIGHT_BUFFER
+
+        screen.blit(self.tab_row, self.position)
+
+
 if __name__ == '__main__':
     pygame.init()
 
@@ -220,6 +259,10 @@ if __name__ == '__main__':
     LEFT_BUTTON, MIDDLE_BUTTON, RIGHT_BUTTON, SCROLL_UP, SCROLL_DOWN = 1, 2, 3, 4, 5
 
     hex_map = HexMap(size)
+    tab_pane = TabPane(size)
+    tab_pane.create_tab('Tab 1')
+    tab_pane.create_tab('This is tab 2')
+    tab_pane.create_tab('Tab 3')
     mouse_drag_orig_angle = None
     mouse_drag_orig_pos = None
     was_moved = False
@@ -272,6 +315,7 @@ if __name__ == '__main__':
                     hex_map.pan(event.pos[0] - mouse_drag_orig_pos[0], event.pos[1] - mouse_drag_orig_pos[1])
                     mouse_drag_orig_pos = event.pos
 
-        screen.fill((0, 0, 0))  # black
+        screen.fill(BLACK)
         hex_map.draw(screen)
+        tab_pane.draw(screen)
         pygame.display.flip()
