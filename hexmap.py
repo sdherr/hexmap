@@ -5,8 +5,8 @@ intention is that you can use this as a basis for whatever else you are making. 
 
 Controls are mouse-based.
 Left-click creates a new hex or changes the color of one.
-Left-drag rotates the map.
-Right-drag pans the map.
+Left-drag pans the map.
+Right-drag rotates the map.
 Scroll-wheel zooms.
 Scroll-wheel-click resets zoom and re-centeres the map.
 
@@ -280,20 +280,20 @@ if __name__ == '__main__':
                     hex_map.zoom(.95)
                 elif event.button == SCROLL_UP:
                     hex_map.zoom(1.05)
+                elif event.button == RIGHT_BUTTON:
+                    mouse_drag_orig_angle = None
                 elif event.button == LEFT_BUTTON:
+                    mouse_drag_orig_pos = None
                     if not was_moved:
                         hex_map.click(event.pos)
-                    mouse_drag_orig_angle = None
                     was_moved = False
-                elif event.button == RIGHT_BUTTON:
-                    mouse_drag_orig_pos = None
                 elif event.button == MIDDLE_BUTTON:
                     hex_map.reset(size)
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == LEFT_BUTTON:
+                if event.button == RIGHT_BUTTON:
                     mouse_drag_orig_angle = math.atan2(event.pos[1] - hex_map.layout.origin.y, event.pos[0] - hex_map.layout.origin.x)
-                elif event.button == RIGHT_BUTTON:
+                elif event.button == LEFT_BUTTON:
                     mouse_drag_orig_pos = event.pos
 
             elif event.type == pygame.MOUSEMOTION:
@@ -310,10 +310,11 @@ if __name__ == '__main__':
                         else:
                             hex_map.rotate_left()
                         mouse_drag_orig_angle = new_angle
-                        was_moved = True
                 elif mouse_drag_orig_pos:  # if we're dragging it
-                    hex_map.pan(event.pos[0] - mouse_drag_orig_pos[0], event.pos[1] - mouse_drag_orig_pos[1])
-                    mouse_drag_orig_pos = event.pos
+                    if (abs(event.pos[0] - mouse_drag_orig_pos[0]) + abs(event.pos[1] - mouse_drag_orig_pos[1])) > 3:
+                        hex_map.pan(event.pos[0] - mouse_drag_orig_pos[0], event.pos[1] - mouse_drag_orig_pos[1])
+                        mouse_drag_orig_pos = event.pos
+                        was_moved = True
 
         screen.fill(BLACK)
         hex_map.draw(screen)

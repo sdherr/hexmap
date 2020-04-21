@@ -5,8 +5,8 @@ This application creates a basic interactable hex map. It's just a proof-of-conc
 ## Controls
 
 * Left-Click: Create a hex at location, or change its color if one exists
-* Left-Drag: Rotate
-* Right-Drag: Pan
+* Left-Drag: Pan
+* Right-Drag: Rotate
 * Scroll-Wheel: Zoom
 * Scroll-Click: Re-center and reset zoom
 
