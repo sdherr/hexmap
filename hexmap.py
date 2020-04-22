@@ -29,6 +29,7 @@ layout_flat = Orientation(3.0 / 2.0, 0.0, math.sqrt(3.0) / 2.0, math.sqrt(3.0), 
 PI_OVER_THREE = math.pi / 3.0
 
 BLACK = (0, 0, 0)
+TRANSPARENT = (25, 175, 82)  # A random color that we'll use for easy transparency
 
 
 class Position(tuple):
@@ -225,6 +226,7 @@ class TabPane:
         map_width, map_height = size
         self.tab_width = tmp_surface.get_size()[0] + self.WIDTH_BUFFER * 2
         self.tab_row = pygame.Surface((self.tab_width, map_height))
+        self.tab_row.set_colorkey(TRANSPARENT)
         self.position = (map_width - self.tab_width, 0)
 
     def create_tab(self, name):
@@ -235,6 +237,7 @@ class TabPane:
 
     def draw(self, screen):
         height = 0
+        self.tab_row.fill(TRANSPARENT)
         for tab in self.tabs:
             tab_height = tab.get_size()[1]
             top_right = (self.tab_width - 1, height)
