@@ -213,6 +213,29 @@ class Hex:
         pygame.draw.polygon(self.map, self.color, self.points, 1)
 
 
+class Tab:
+    def __init__(self, name, pane):
+        self.name = name
+        self.pane = pane 
+        self.name_display = self.pane.font.render(name, True, (0, 0, 255), BLACK)
+        self.name_display = pygame.transform.rotate(self.name_display, 90)
+        self.text = self.pane.font.render("This is what " + self.name + " would look like", True, (0, 0, 255), BLACK)
+        self.text_width = self.text.get_size()[0]
+        self.content = pygame.Surface((self.text_width, self.pane.screen_size[1]))
+        self.content.blit(self.text, (0, self.pane.screen_size[1]/2))
+
+    def get_size(self):
+        return self.name_display.get_size()
+
+    def click(self, pos):
+        pass
+
+    def draw(self, screen):
+        # The expanded content only. Return the width.
+        screen.blit(self.content, (self.pane.screen_size[0] - self.text_width, 0))
+        return self.text_width
+
+
 class TabPane:
     WIDTH_BUFFER = 5
     HEIGHT_BUFFER = 10
@@ -223,22 +246,50 @@ class TabPane:
         self.font = pygame.font.SysFont(pygame.font.get_default_font(), 30)
         tmp_surface = self.font.render('Ig', True, (0, 0, 255), BLACK)
         tmp_surface = pygame.transform.rotate(tmp_surface, 90)
+        self.screen_size = size
         map_width, map_height = size
         self.tab_width = tmp_surface.get_size()[0] + self.WIDTH_BUFFER * 2
-        self.tab_row = pygame.Surface((self.tab_width, map_height))
+        self.tab_row = pygame.Surface((self.tab_width, self.screen_size[1]))
         self.tab_row.set_colorkey(TRANSPARENT)
-        self.position = (map_width - self.tab_width, 0)
+        self.content_width = 0
 
     def create_tab(self, name):
-        text_surface = self.font.render(name, True, (0, 0, 255), BLACK)
-        text_surface = pygame.transform.rotate(text_surface, 90)
-        self.tabs.append(text_surface)
-        self.active_tab = text_surface
+        tab = Tab(name, self)
+        self.tabs.append(tab)
+
+    def collidepoint(self, pos):
+        return pos[0] >= self.screen_size[0] - self.content_width - self.tab_width
+
+    def click(self, pos):
+        left = self.screen_size[0] - self.content_width - self.tab_width
+        right = self.screen_size[0] - self.content_width
+        if pos[0] >= right:
+            self.active_tab.click(pos)
+        elif pos[0] >= left:
+            # they clicked on a tab maybe?
+            height = 0
+            for tab in self.tabs:
+                tab_height = tab.get_size()[1] + self.HEIGHT_BUFFER * 2
+                rect = pygame.Rect(left, height, self.tab_width, tab_height)
+                height += tab_height
+                if rect.collidepoint(pos[0], pos[1]):
+                    if self.active_tab == tab:
+                        # minimize
+                        self.active_tab = None
+                        self.content_width = 0
+                    else:
+                        self.active_tab = tab
+
+                    break
 
     def draw(self, screen):
         height = 0
         self.tab_row.fill(TRANSPARENT)
+        self.screen_size= screen.get_size()
         for tab in self.tabs:
+            if tab == self.active_tab:
+                self.content_width = tab.draw(screen)
+
             tab_height = tab.get_size()[1]
             top_right = (self.tab_width - 1, height)
             top_left = (0, height + self.HEIGHT_BUFFER)
@@ -246,10 +297,10 @@ class TabPane:
             bottom_right = (self.tab_width - 1, height + 2 * self.HEIGHT_BUFFER + tab_height)
             pygame.draw.polygon(self.tab_row, BLACK, (top_right, top_left, bottom_left, bottom_right))
             pygame.draw.polygon(self.tab_row, (255, 255, 255), (top_right, top_left, bottom_left, bottom_right), 1)
-            self.tab_row.blit(tab, (0 + self.WIDTH_BUFFER, height + self.HEIGHT_BUFFER))
+            self.tab_row.blit(tab.name_display, (0 + self.WIDTH_BUFFER, height + self.HEIGHT_BUFFER))
             height += tab_height + 2 * self.HEIGHT_BUFFER
 
-        screen.blit(self.tab_row, self.position)
+        screen.blit(self.tab_row, (self.screen_size[0] - self.tab_width - self.content_width, 0))
 
 
 if __name__ == '__main__':
@@ -287,8 +338,12 @@ if __name__ == '__main__':
                     mouse_drag_orig_angle = None
                 elif event.button == LEFT_BUTTON:
                     mouse_drag_orig_pos = None
-                    if not was_moved:
-                        hex_map.click(event.pos)
+                    if tab_pane.collidepoint(event.pos):
+                        tab_pane.click(event.pos)
+                    else:
+                        if not was_moved:
+                            hex_map.click(event.pos)
+
                     was_moved = False
                 elif event.button == MIDDLE_BUTTON:
                     hex_map.reset(size)
